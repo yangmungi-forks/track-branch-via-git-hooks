@@ -64,8 +64,14 @@ if (!empty($_POST['payload'])) {
                 $_SERVER['SERVER_ADDR']));
     }
     
-    // now make sure that the commit is for the branch we want to track
     $sent_email = false;
+    $cmd = false;
+    $output = array(); 
+    $return_var = null;
+
+    $currdir = dirname(__FILE__);
+
+    // now make sure that the commit is for the branch we want to track
     if ($payload->ref === 'refs/heads/' . $tracking_branch) {
         debug('payload is a commit to a tracking branch: ' . $tracking_branch);
         
@@ -73,8 +79,17 @@ if (!empty($_POST['payload'])) {
         // user only has the ability to run a specified script as specified user
         // so will need to execute that script as specified user. That script
         // will output and exit the git pull command as if it was run here
-        $output = array(); $return_var = null;
-        $cmd = sprintf("sudo -u %s %s/gitpull.php", $repo_user, dirname(__FILE__));    // system should be setup to run gitpull.php as specified user        
+        $cmd = sprintf("sudo -u %s %s/gitpull.php", $repo_user, $currdir);    
+        // system should be setup to run gitpull.php as specified user 
+    } else if (preg_match('|refs/tags/.*-gm|', $payload->ref)) {
+        debug('payload was a gm-cut');
+
+        $cmd = sprintf("sudo -u %s %s/gitmergeorreset.php", $repo_user, $currdir);
+    } else {
+        debug('payload was not a commit to a tracking branch: ' . $tracking_branch);        
+    }
+
+    if ($cmd) {
         debug('executing command: ' . $cmd);
         exec($cmd, $output, $return_var);        
         
@@ -107,8 +122,6 @@ if (!empty($_POST['payload'])) {
         if (empty($sent_email)) {
             error_log('Could not send email notification for git_post_receive');
         }
-    } else {
-        debug('payload was not a commit to a tracking branch: ' . $tracking_branch);        
     }
 } else {
     debug('no payload found');

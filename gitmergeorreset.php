@@ -16,11 +16,27 @@ if (get_script_user() == $repo_user && is_cli()) {
     // now run git pull for given repo
     $output = array();
     $return_var = null;
-    $cmd = sprintf("cd %s && /usr/bin/git pull", $repo_location);
+    chdir($repo_location);
+    $cmd = sprintf("/usr/bin/git fetch --tags", $repo_location);
     debug('executing command: ' . $cmd);
     exec($cmd, $output, $return_var);
     
     debug('cmd output: ' . implode("\n", $output));    
+
+    $cmd = sprintf("/usr/bin/git merge `git tag | tail -n1`", $repo_location);
+    debug('executing command: ' . $cmd);
+    exec($cmd, $output, $return_var);
+    
+    debug('cmd output: ' . implode("\n", $output));    
+
+    if ($return_var !== 0) {
+        $cmd = sprintf("/usr/bin/git reset --hard && /usr/bin/git clean -fd", 
+            $repo_location);
+        debug('executing command: ' . $cmd);
+        exec($cmd, $output, $solemn);
+        
+        debug('cmd output: ' . implode("\n", $output));    
+    }
 
     // output command results
     echo(implode("\n", $output));
@@ -28,7 +44,6 @@ if (get_script_user() == $repo_user && is_cli()) {
 }
 
 // else exit with bad error code
-debug('gitpull.php called invalidly');
+debug($argv[0] . ' called invalidly');
 echo 'Script needs to be run on command line as specified user';
 exit(1);
-
