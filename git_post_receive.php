@@ -86,7 +86,7 @@ if (!empty($_POST['payload'])) {
 
         $cmd = sprintf("sudo -u %s %s/gitmergeorreset.php", $repo_user, $currdir);
     } else {
-        debug('payload was not a commit to a tracking branch: ' . $tracking_branch);        
+        debug('payload was not a commit to a tracking branch, nor a gm: ' . $tracking_branch);        
     }
 
     if ($cmd) {

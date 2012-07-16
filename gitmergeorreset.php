@@ -8,7 +8,7 @@
 require dirname(__FILE__) . '/config.php';
 require dirname(__FILE__) . '/functions.php';
 
-debug(sprintf('gitpull.php called: get_script_user() = %s, is_cli() = %s', 
+debug(sprintf($argv[0] . ' called: get_script_user() = %s, is_cli() = %s', 
         get_script_user(), is_cli()));
 
 // make sure that script is run from command line and as specified repo user
