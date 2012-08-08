@@ -5,8 +5,7 @@
  */
 
 // get script variables
-require dirname(__FILE__) . '/config.php';
-require dirname(__FILE__) . '/functions.php';
+require dirname(__FILE__) . '/bootstrap.php';
 
 debug(sprintf($argv[0] . ' called: get_script_user() = %s, is_cli() = %s', 
         get_script_user(), is_cli()));
