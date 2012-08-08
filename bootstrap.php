@@ -5,6 +5,12 @@
  */
 
 $curdir = dirname(__FILE__);
+
+if (!file_exists($curdir . '/config.php')) {
+    error_log('git_post_receive.php: no configuration file');
+    die(1);
+}
+
 require $curdir . '/config.php';
 require $curdir . '/functions.php';
 

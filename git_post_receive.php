@@ -92,7 +92,7 @@ if (!empty($_POST['payload'])) {
             debug('there was an error, emailing admin: ' . $admin_email);
             $sent_email = mail(
                 $admin_email, 
-                $argv[0] . ': Failed to run ' . $cmd, 
+                'git_post_receive.php : Failed to run ' . $cmd, 
                 sprintf(
                     "return_var: %d\n\ncommand line output:\n\n%s"
                         . "\n\njson_payload:\n\n%s", 
@@ -104,13 +104,17 @@ if (!empty($_POST['payload'])) {
         } else {
             // update was successful, so email committer and admin
             // get emails of committers
-            $committers = array($admin_email, $payload->pusher->email);
+            $committers = array($admin_email);
+            if (isset($payload->pusher->email)) {
+                $committers[] = $payload->pusher->email;
+            }
+
             debug('update successful, emailing pusher and admin: ' 
                 . implode(';', $committers));            
             
             $sent_email = mail(
                 implode(',', $committers), 
-                $argv[0] . ': Successfully run %s' . $cmd, 
+                'git_post_receive.php : Successfully run ' . $cmd, 
                 sprintf(
                     "Updated repo at %s with latest command %s " 
                         . "branch. Here is the output command" 

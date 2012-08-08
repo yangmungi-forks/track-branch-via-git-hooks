@@ -7,8 +7,8 @@
 // get script variables
 require dirname(__FILE__) . '/bootstrap.php';
 
-debug(sprintf($argv[0] . ' called: get_script_user() = %s, is_cli() = %s', 
-        get_script_user(), is_cli()));
+debug(sprintf('%s called: get_script_user() = %s, is_cli() = %s', 
+       __FILE__, get_script_user(), is_cli()));
 
 // make sure that script is run from command line and as specified repo user
 if (validate_cli($repo_user)) {
@@ -43,5 +43,5 @@ if (validate_cli($repo_user)) {
 }
 
 // else exit with bad error code
-debug($argv[0] . ' called invalidly');
+debug(__FILE__ . ' called invalidly');
 error('Script needs to be run on command line as specified user');
