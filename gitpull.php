@@ -8,18 +8,17 @@
 require dirname(__FILE__) . '/config.php';
 require dirname(__FILE__) . '/functions.php';
 
-debug(sprintf('gitpull.php called: get_script_user() = %s, is_cli() = %s', 
+debug(sprintf($argv[0] . ' called: get_script_user() = %s, is_cli() = %s', 
         get_script_user(), is_cli()));
 
 // make sure that script is run from command line and as specified repo user
-if (get_script_user() == $repo_user && is_cli()) {
+if (validate_cli($repo_user)) {
     // now run git pull for given repo
     $output = array();
     $return_var = null;
     $cmd = sprintf("cd %s && /usr/bin/git pull", $repo_location);
     debug('executing command: ' . $cmd);
     exec($cmd, $output, $return_var);
-    
     debug('cmd output: ' . implode("\n", $output));    
 
     // output command results
@@ -28,7 +27,5 @@ if (get_script_user() == $repo_user && is_cli()) {
 }
 
 // else exit with bad error code
-debug('gitpull.php called invalidly');
-echo 'Script needs to be run on command line as specified user';
-exit(1);
-
+debug($argv[0] . ' called invalidly');
+error('Script needs to be run on command line as specified user');
