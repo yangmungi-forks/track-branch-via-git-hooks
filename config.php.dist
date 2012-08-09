@@ -9,14 +9,28 @@
 // The first match will run, and will stop checking for other matches.
 //  (i.e. rules 'heads/foo' and 'heads/foobar' will always match 'heads/foo',
 //  if 'heads/foo' comes first.)
+//
+//      Basic:
+//  
+// Simply replace the 'master' with whatever branch you want to track. Be
+//  sure to surround it in quotes.
+// 
+//      Advanced:
+//
 // The array value (right side of =>) must be an array that can consist of
 //  'action' => name of file that will be called (without '.php'). 
-//      Defaults to 'gitpull'.
+//      Currently 'automerge' and 'pull' are available.
+//      Check out gitlib.php to see what each does.
+//      Defaults to 'pull'.
 //  'type' => 'branch' or 'tag'. Defaults to 'branch'.
 //  'remote' => name of remote repo to fetch from. $repo user must have access.
 //      Defaults to 'origin'.
+//
+// TODO Support repo_location per rule.
+// TODO Support repo_user per rule.
+// TODO Support admin_email per rule.
 $tracking_rules = array(
-    'MYBRANCH' => array()
+    'master'
 );
 
 // This is the directory at which the git repository to run is located.

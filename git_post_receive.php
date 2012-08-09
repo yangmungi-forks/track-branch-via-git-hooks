@@ -87,47 +87,47 @@ if (!empty($_POST['payload'])) {
         exec($cmd . ' 2>&1', $output, $return_var);        
         debug('cmd output: ' . implode("\n", $output));
 
+        $mailto = array($admin_email);
+        $subject_part = 'Successfully run ';
+
         // if $return_var is non-zero, then an error happened
         // http://www.linuxtopia.org/online_books/advanced_bash_scripting_guide/exitcodes.html
         if (0 !== $return_var) {
             // there was an error, so email the admin
             debug('there was an error, emailing admin: ' . $admin_email);
-            $sent_email = mail(
-                $admin_email, 
-                'git_post_receive.php : Failed to run ' . $cmd, 
-                sprintf(
-                    "return_var: %d\n\ncommand line output:\n\n%s"
-                        . "\n\njson_payload:\n\n%s", 
-                    $return_var,
-                    implode("\n", $output), 
-                    print_r($payload, true)
-                )
+            
+            $mail_content = sprintf(
+                "return_var: %d\n\ncommand line output:\n\n%s"
+                    . "\n\njson_payload:\n\n%s", 
+                $return_var,
+                implode("\n", $output), 
+                print_r($payload, true)
             );
         } else {
             // update was successful, so email committer and admin
             // get emails of committers
-            $committers = array($admin_email);
             if (isset($payload->pusher->email)) {
-                $committers[] = $payload->pusher->email;
+                $mailto[] = $payload->pusher->email;
             }
 
-            debug('update successful, emailing pusher and admin: ' 
-                . implode(';', $committers));            
+            debug('update successful, emailing admin and pusher: ' 
+                . implode(';', $mailto));            
             
-            $sent_email = mail(
-                implode(',', $committers), 
-                'git_post_receive.php : Successfully run ' . $cmd, 
-                sprintf(
-                    "Updated repo at %s with latest command %s " 
-                        . "branch. Here is the output command" 
-                        . "\n\n%s", 
-                    $repo_location,
-                    $cmd,
-                    implode("\n", $output)
-                )
+            $mail_content = sprintf(
+                "Updated repo at %s with command `%s`. Here is the output "
+                    . "of the command:\n\n%s", 
+                $repo_location,
+                $cmd,
+                implode("\n", $output)
             );
         }
         
+        $sent_email = mail(
+            implode(',', $mailto),
+            "git_post_receive.php : $subject_part $cmd",
+            $mail_content
+        );
+
         if (empty($sent_email)) {
             error_log('Could not send email notification for git_post_receive');
         }

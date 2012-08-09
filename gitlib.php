@@ -1,6 +1,6 @@
 <?php
 
-function gitpull($trackcfg) {
+function git_pull($trackcfg) {
     // now run git pull for given repo
     $output = array();
     $return_var = null;
@@ -8,16 +8,15 @@ function gitpull($trackcfg) {
     $cmd = sprintf("/usr/bin/git pull 2>&1");
     debug('executing command: ' . $cmd);
     exec($cmd, $output, $return_var);
-    debug('cmd output: ' . implode("\n", $output));    
+    debug("cmd output:\n" . implode("\n", $output));    
 
     // output command results
     echo(implode("\n", $output));
 
-    return $return_var;  // exit with command error code
+    return $return_var;
 }
 
-function gitmergeorreset($trackcfg) {
-    // now run git pull for given repo
+function git_automerge($trackcfg) {
     $output = array();
     $return_var = null;
 
@@ -25,13 +24,13 @@ function gitmergeorreset($trackcfg) {
     $cmd = sprintf("/usr/bin/git fetch --tags");
     debug('executing command: ' . $cmd);
     exec($cmd, $output, $return_var);
-    debug('cmd output: ' . implode("\n", $output));    
+    debug("cmd output:\n" . implode("\n", $output));    
 
     $cmd = sprintf("/usr/bin/git merge `git tag | grep %s | tail -n1` 2>&1",
         escapeshellarg($trackcfg['target']));
     debug('executing command: ' . $cmd);
     exec($cmd, $output, $return_var);
-    debug('cmd output: ' . implode("\n", $output));    
+    debug("cmd output:\n" . implode("\n", $output));    
 
     if ($return_var !== 0) {
         // Our working directory is in a conflicted state, so hard reset
@@ -40,7 +39,9 @@ function gitmergeorreset($trackcfg) {
         // This should always work, and will return the incorrect return value
         debug('executing command: ' . $cmd);
         exec($cmd, $output, $solemn);
-        debug('cmd output: ' . implode("\n", $output));    
+        debug("cmd output:\n" . implode("\n", $output));    
+    } else {
+        // Push?
     }
 
     // output command results

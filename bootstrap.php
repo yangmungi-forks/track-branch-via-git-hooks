@@ -8,6 +8,7 @@ $curdir = dirname(__FILE__);
 
 if (!file_exists($curdir . '/config.php')) {
     error_log('git_post_receive.php: no configuration file');
+    echo "No configuration file!\n";
     die(1);
 }
 
@@ -20,6 +21,10 @@ if (!function_exists('json_decode')) {
     error('JSON not installed');
 }
 
+if (!isset($debug)) {
+    $debug = false;
+}
+
 // Check configuration settings
 $checks = array(
     'tracking_rules',
@@ -29,7 +34,7 @@ $checks = array(
 );
 
 foreach ($checks as $check) {
-    if (empty($$check)) {
+    if (empty(${$check})) {
         error('no $' . $check . ' - check your config.php');
     }
 }
@@ -39,6 +44,13 @@ unset($checks);
 // Check and set default tracking rules
 // Also shortcut for next steps
 foreach ($tracking_rules as $tracking_rule => $trackcfg) {
+    // Handle simple branch tracking
+    if (is_string($trackcfg)) {
+        unset($tracking_rules[$tracking_rule]);
+        $tracking_rule = $trackcfg;
+        $trackcfg = array();
+    }
+
     if (!isset($trackcfg['type']) || $trackcfg['type'] != 'tag') {
         $trackcfg['type'] = 'heads';
     } else {
@@ -49,9 +61,9 @@ foreach ($tracking_rules as $tracking_rule => $trackcfg) {
     $trackcfg['remote'] = 'origin';
 
     if (!isset($trackcfg['action'])) {
-        $action = 'gitpull';
+        $action = 'git_pull';
     } else {
-        $action = $trackcfg['action'];
+        $action = 'git_' . $trackcfg['action'];
     }
 
     if (!function_exists($action)) {
@@ -63,6 +75,8 @@ foreach ($tracking_rules as $tracking_rule => $trackcfg) {
         $trackcfg['action'] = $action;
     }
 
+    // This is just a copy appended to the array
+    // Currently used when sent to the git_* functions
     $trackcfg['target'] = $tracking_rule;
 
     $tracking_rules[$tracking_rule] = $trackcfg;
