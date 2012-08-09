@@ -58,6 +58,8 @@ if (!empty($_POST['payload'])) {
     }
     
     $sent_email = false;
+
+    // Command to run
     $cmd = false;
     $output = array();
     $return_var = null;
@@ -67,13 +69,13 @@ if (!empty($_POST['payload'])) {
     $updated_ref = $payload->ref;
 
     // Check to see if this
-    foreach ($tracking_rules as $tracking_rule => $tracking_response) {
-        if (preg_match('/refs\/' . preg_quote($tracking_rule, '/')
-                . '/', $updated_ref)) {
-            debug('payload matched a rule: ' . $tracking_rule);
-            $cmd = sprintf("sudo -u %s %s/%s.php", $repo_user, $currdir,
-                $tracking_response);
+    foreach ($tracking_rules as $tracking_rule => $trackcfg) {
+        $type = $trackcfg['type'];
 
+        if (preg_match("|refs/$type/$tracking_rule|", $updated_ref)) {
+            debug('payload matched a rule: ' . $tracking_rule);
+            $cmd = sprintf("sudo -u %s %s/usergit.php %s", $repo_user, 
+                $currdir, escapeshellarg($tracking_rule));
         }
     }
 

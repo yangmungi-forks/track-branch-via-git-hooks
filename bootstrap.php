@@ -13,6 +13,7 @@ if (!file_exists($curdir . '/config.php')) {
 
 require $curdir . '/config.php';
 require $curdir . '/functions.php';
+require $curdir . '/gitlib.php';
 
 // NOTE: JSON should come preinstalled with PHP starting with 5.2
 if (!function_exists('json_decode')) {
@@ -35,12 +36,34 @@ foreach ($checks as $check) {
 
 unset($checks);
 
-// Check tracking rules
-foreach ($tracking_rules as $tracking_rule => $tracking_response) {
-    if (!file_exists($curdir . '/' . $tracking_response . '.php')) {
-        debug('tracking_response ' . $tracking_response 
-            . '.php does not exist.');
+// Check and set default tracking rules
+// Also shortcut for next steps
+foreach ($tracking_rules as $tracking_rule => $trackcfg) {
+    if (!isset($trackcfg['type']) || $trackcfg['type'] != 'tag') {
+        $trackcfg['type'] = 'heads';
+    } else {
+        $trackcfg['type'] = 'tags';
+    }
+
+    // TODO Fully fledge this feature
+    $trackcfg['remote'] = 'origin';
+
+    if (!isset($trackcfg['action'])) {
+        $action = 'gitpull';
+    } else {
+        $action = $trackcfg['action'];
+    }
+
+    if (!function_exists($action)) {
+        debug('tracking_response ' . $action . ' does not exist.');
 
         unset($tracking_rules[$tracking_rule]);
+        continue;
+    } else {
+        $trackcfg['action'] = $action;
     }
+
+    $trackcfg['target'] = $tracking_rule;
+
+    $tracking_rules[$tracking_rule] = $trackcfg;
 }

@@ -6,13 +6,17 @@
 // These define which preg_match() will run what script.
 // Use "heads/MYBRANCH" for branches, "tags/MYTAG" for tags.
 // This can be a regular expression, and does not need to be escaped.
-// The array value (right side of =>) must point to some script 
-//  (i.e. 'gitpull.php' must exist for the example provided.)
 // The first match will run, and will stop checking for other matches.
 //  (i.e. rules 'heads/foo' and 'heads/foobar' will always match 'heads/foo',
 //  if 'heads/foo' comes first.)
+// The array value (right side of =>) must be an array that can consist of
+//  'action' => name of file that will be called (without '.php'). 
+//      Defaults to 'gitpull'.
+//  'type' => 'branch' or 'tag'. Defaults to 'branch'.
+//  'remote' => name of remote repo to fetch from. $repo user must have access.
+//      Defaults to 'origin'.
 $tracking_rules = array(
-    'heads/MYBRANCH' => 'gitpull'
+    'MYBRANCH' => array()
 );
 
 // This is the directory at which the git repository to run is located.
@@ -20,7 +24,8 @@ $tracking_rules = array(
 $repo_location = '';
 
 // This is used for security purposes.
-// Apache must be able to sudo as this user
+// Apache must be able to sudo as this user.
+// This user must have access to the git repository.
 // Refer to README for more information
 $repo_user = '';  
 
