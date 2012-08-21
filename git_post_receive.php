@@ -95,6 +95,8 @@ if (!empty($_POST['payload'])) {
         if (0 !== $return_var) {
             // there was an error, so email the admin
             debug('there was an error, emailing admin: ' . $admin_email);
+
+            $subject_part = 'There was an error running ';
             
             $mail_content = sprintf(
                 "return_var: %d\n\ncommand line output:\n\n%s"
