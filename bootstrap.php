@@ -28,9 +28,6 @@ if (!isset($debug)) {
 // Check configuration settings
 $checks = array(
     'tracking_rules',
-    'repo_location',
-    'repo_user',
-    'admin_email'
 );
 
 foreach ($checks as $check) {
@@ -40,6 +37,10 @@ foreach ($checks as $check) {
 }
 
 unset($checks);
+
+$global_checks = array(
+    'repo_user', 'repo_location', 'admin_email', 'admin_name'
+);
 
 // Check and set default tracking rules
 // Also shortcut for next steps
@@ -51,6 +52,18 @@ foreach ($tracking_rules as $tracking_rule => $trackcfg) {
         $trackcfg = array();
     }
 
+    foreach ($global_checks as $global_check) {
+        if (empty($trackcfg[$global_check])) {
+            if (empty(${$global_check})) {
+                error('no tracking ' . $global_check . ' nor global version '
+                    . 'available.');
+            } else {
+                $trackcfg[$global_check] = ${$global_check};
+            }
+        }
+    }
+
+    // TODO normalize type, remote and action to use previous foreach
     if (!isset($trackcfg['type']) || $trackcfg['type'] != 'tag') {
         $trackcfg['type'] = 'heads';
     } else {

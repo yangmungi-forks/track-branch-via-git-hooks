@@ -26,11 +26,16 @@ function git_automerge($trackcfg) {
     exec($cmd, $output, $return_var);
     debug("cmd output:\n" . implode("\n", $output));    
 
-    $cmd = sprintf("/usr/bin/git merge `git tag | grep %s | tail -n1` 2>&1",
+    // This command requires some specialties, since a merge requires a 
+    // commit
+    // TODO abstract out the instance-only configuration variables
+    $cmd = sprintf("/usr/bin/git -c user.email=%s -c user.name=%s merge --no-ff `git tag | grep %s | tail -n1` 2>&1",
+        escapeshellarg($trackcfg['admin_email']),
+        escapeshellarg($trackcfg['admin_name']),
         escapeshellarg($trackcfg['target']));
     debug('executing command: ' . $cmd);
     exec($cmd, $output, $return_var);
-    debug("cmd output:\n" . implode("\n", $output));    
+    debug("cmd output:\n" . implode("\n", $output));
 
     if ($return_var !== 0) {
         // Our working directory is in a conflicted state, so hard reset
