@@ -55,7 +55,7 @@ foreach ($tracking_rules as $tracking_rule => $trackcfg) {
     foreach ($global_checks as $global_check) {
         if (empty($trackcfg[$global_check])) {
             if (empty(${$global_check})) {
-                error('no tracking ' . $global_check . ' nor global version '
+                error('no tracking or global "' . $global_check . '" '
                     . 'available.');
             } else {
                 $trackcfg[$global_check] = ${$global_check};
