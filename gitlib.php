@@ -5,7 +5,8 @@ function git_pull($trackcfg) {
     $output = array();
     $return_var = null;
 
-    $cmd = sprintf("/usr/bin/git pull 2>&1 && /usr/bin/git submodule update --init 2>&1");
+    $cmd = sprintf("/usr/bin/git pull 2>&1 "
+        . "&& /usr/bin/git submodule update --init 2>&1");
     debug('executing command: ' . $cmd);
     exec($cmd, $output, $return_var);
     debug("cmd output:\n" . implode("\n", $output));    

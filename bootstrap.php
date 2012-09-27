@@ -51,6 +51,11 @@ foreach ($tracking_rules as $tracking_rule => $trackcfg) {
         $tracking_rule = $trackcfg;
         $trackcfg = array();
     }
+  
+    // This is to support multiple responses to the same branch
+    if (empty($trackcfg['target'])) {
+        $trackcfg['target'] = $tracking_rule;
+    }
 
     foreach ($global_checks as $global_check) {
         if (empty($trackcfg[$global_check])) {
@@ -90,7 +95,7 @@ foreach ($tracking_rules as $tracking_rule => $trackcfg) {
 
     // This is just a copy appended to the array
     // Currently used when sent to the git_* functions
-    $trackcfg['target'] = $tracking_rule;
 
-    $tracking_rules[$tracking_rule] = $trackcfg;
+    unset($tracking_rules[$tracking_rule]);
+    $tracking_rules[] = $trackcfg;
 }

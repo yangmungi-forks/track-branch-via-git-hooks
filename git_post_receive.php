@@ -69,9 +69,11 @@ if (!empty($_POST['payload'])) {
     $updated_ref = $payload->ref;
 
     // Check to see if this
-    foreach ($tracking_rules as $tracking_rule => $trackcfg) {
+    foreach ($tracking_rules as $track_key => $trackcfg) {
         $type = $trackcfg['type'];
         $repo_user = $trackcfg['repo_user'];
+
+        $tracking_rule = $trackcfg['target'];
 
         if (preg_match("|refs/$type/$tracking_rule\$|", $updated_ref)) {
             debug('payload matched a rule: ' . $tracking_rule);
