@@ -22,14 +22,17 @@ if (isset($argv[1])) {
         $repo_location = $trackcfg['repo_location'];
         $fn = $trackcfg['action'];
 
-        if (validate_cli($repo_user) && function_exists($fn)) {
+        if (validate_cli($repo_user) && validate_action($fn)) {
             echo "Working with repository at $repo_location\n";
             chdir($repo_location);
-            exit($fn($trackcfg));
+
+            $action = new $fn($trackcfg);
+            $r = $action->run();
+
+            exit($r);
         }
     }
 }
 
 // else exit with bad error code
-debug(__FILE__ . ' called invalidly');
-error('Script needs to be run on command line as specified user');
+error(__FILE__ . ' called invalidly');

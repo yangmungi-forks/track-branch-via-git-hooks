@@ -50,3 +50,9 @@ function validate_cli($repo_user) {
     return get_script_user() == $repo_user && is_cli();
 }
 
+/**
+ *  Checks if a specified handler to repo changes exists.
+ **/
+function validate_action($action) {
+    return class_exists($action);
+}

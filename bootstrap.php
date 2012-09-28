@@ -57,6 +57,8 @@ foreach ($tracking_rules as $tracking_rule => $trackcfg) {
         $trackcfg['target'] = $tracking_rule;
     }
 
+    // See if there is a specific option there, or if it just should use
+    // the global options.
     foreach ($global_checks as $global_check) {
         if (empty($trackcfg[$global_check])) {
             if (empty(${$global_check})) {
@@ -84,7 +86,7 @@ foreach ($tracking_rules as $tracking_rule => $trackcfg) {
         $action = 'git_' . $trackcfg['action'];
     }
 
-    if (!function_exists($action)) {
+    if (!validate_action($action)) {
         debug('tracking_response ' . $action . ' does not exist.');
 
         unset($tracking_rules[$tracking_rule]);
@@ -92,9 +94,6 @@ foreach ($tracking_rules as $tracking_rule => $trackcfg) {
     } else {
         $trackcfg['action'] = $action;
     }
-
-    // This is just a copy appended to the array
-    // Currently used when sent to the git_* functions
 
     unset($tracking_rules[$tracking_rule]);
     $tracking_rules[] = $trackcfg;

@@ -1,57 +1,205 @@
 <?php
+/**
+ *  A simple wrapper class for often-used shell commands.
+ **/
+class bash {
+    const redir_err = '2>&1';
+    const chain = ' && ';
 
-function git_pull($trackcfg) {
-    // now run git pull for given repo
-    $output = array();
-    $return_var = null;
-
-    $cmd = sprintf("/usr/bin/git pull 2>&1 "
-        . "&& /usr/bin/git submodule update --init 2>&1");
-    debug('executing command: ' . $cmd);
-    exec($cmd, $output, $return_var);
-    debug("cmd output:\n" . implode("\n", $output));    
-
-    // output command results
-    echo(implode("\n", $output));
-
-    return $return_var;
+    /**
+     *  Simple wrapper, includes some debugging.
+     **/
+    static function execute($cmd, &$output, &$retvar) {
+        debug('executing command: ' . $cmd);
+        exec($cmd, $output, $retvar);
+        debug("command output:\n" . implode("\n", $output));    
+    }
 }
 
-function git_automerge($trackcfg) {
-    $output = array();
-    $return_var = null;
+/**
+ *  A simple wrapper class for bash-git.
+ **/
+class git {
+    const bin = '/usr/bin/git';
 
-    // We do not care about the following command's STDERR
-    $cmd = sprintf("/usr/bin/git fetch --tags");
-    debug('executing command: ' . $cmd);
-    exec($cmd, $output, $return_var);
-    debug("cmd output:\n" . implode("\n", $output));    
-
-    // This command requires some specialties, since a merge requires a 
-    // commit
-    // TODO abstract out the instance-only configuration variables
-    $cmd = sprintf("/usr/bin/git -c user.email=%s -c user.name=%s merge --no-ff `git tag | grep %s | tail -n1` 2>&1",
-        escapeshellarg($trackcfg['admin_email']),
-        escapeshellarg($trackcfg['admin_name']),
-        escapeshellarg($trackcfg['target']));
-    debug('executing command: ' . $cmd);
-    exec($cmd, $output, $return_var);
-    debug("cmd output:\n" . implode("\n", $output));
-
-    if ($return_var !== 0) {
-        // Our working directory is in a conflicted state, so hard reset
-        $cmd = "/usr/bin/git reset --hard 2>&1 && /usr/bin/git clean -fd 2>&1";
-
-        // This should always work, and will return the incorrect return value
-        debug('executing command: ' . $cmd);
-        exec($cmd, $output, $solemn);
-        debug("cmd output:\n" . implode("\n", $output));    
-    } else {
-        // Push?
+    /**
+     *  Basic command, with automated STDERR redirection to STDOUT.
+     **/
+    static function command($command) {
+        return self::bin . " $command " . bash::redir_err;
     }
 
-    // output command results
-    echo(implode("\n", $output));
+    /**
+     *  Generates a git command that can commit.
+     **/
+    static function commit_command($command, $args) {
+        $fields = array(
+            'admin_email' => 'user.email', 
+            'admin_name' => 'user.name'
+        );
 
-    return $return_var;
+        // Turn (A => B) and (A => C) into (B => C)
+        foreach ($fields as $field => $gitcfg) {
+            $gitcfgv = '';
+            if (!empty($args[$field])) {
+                $gitcfgv = $args[$field];
+            }
+
+            unset($fields[$field]);
+            $fields[$gitcfg] = $gitcfgv;
+        }
+
+        // i want to array_map
+        $specials = array();
+        foreach ($fields as $gitcfg => $gitv) {
+            $specials[] = "-c $gitcfg=". escapeshellarg($gitv);
+        }
+
+        $special = implode(' ', $specials);
+
+        return self::command("$special $command");
+    }
+
+    ///////////////////////////////
+    // Convenience git functions //
+    ///////////////////////////////
+
+    static function fetch() {
+        return self::command('fetch -p') 
+            . bash::chain . self::command('fetch -pt');
+    }
+
+    static function update_submodules() {
+        return self::command('submodule update --init');
+    }
+
+    static function full_clean() {
+        return self::command('reset --hard') 
+            . bash::chain . self::command('clean -fd');
+    }
+}
+
+/**
+ *  Base class for possible actions responding to repo actions.
+ **/
+abstract class git_exec {
+    var $trackcfg = null;
+    var $fetched = false;
+
+    function __construct($trackcfg) {
+        $this->trackcfg = $trackcfg;
+    }
+
+    function print_output($output) {
+        echo implode("\n", $output);
+    }
+
+    function prefetch() {
+        if ($this->fetched) {
+            return 0;
+        }
+
+        $this->fetched = true;
+
+        bash::execute(git::fetch(), $output, $retvar);
+        return $retvar;
+    }
+
+    function full_refname() {
+        return $this->trackcfg['remote'] . '/' . $this->trackcfg['target'];
+    }
+
+    /**
+     *  Generic run statement.
+     **/
+    function run() {
+        $retvar = $this->prefetch();
+
+        // A fetch failed!
+        if ($retvar) {
+            return $retvar;
+        }
+
+        $cmd = $this->prep_command();
+
+        bash::execute($cmd, $output, $retvar);
+        $this->print_output($output);
+
+        return $retvar;
+    }
+
+    abstract function prep_command();
+}
+
+/**
+ *  Run a simple pull. Will attempt fast-foward merges only.
+ **/
+class git_pull extends git_exec {
+    function prep_command() {
+        $trackcfg = $this->trackcfg;
+
+        return git::command(
+                sprintf(
+                    'merge %s --ff-only',
+                    escapeshellarg($this->full_refname())
+                )
+            ) . bash::chain . git::update_submodules();
+    }
+}
+
+/**
+ *  Will merge based on tag matches. Only works on tags.
+ **/
+class git_automerge extends git_exec {
+    function run() {
+        $this->prefetch();
+
+        $retvar = $this->find_target();
+        if ($retvar) {
+            return $retvar;
+        }
+
+        $mergeret = parent::run();
+
+        if ($mergeret) {
+            bash::execute(git::full_clean(), $o, $r);
+        }
+
+        return $mergeret;
+    }
+
+    function prep_command() {
+        // This command requires some specialties, since a merge requires a 
+        // commit
+        $cmd = git::commit_command(
+            sprintf(
+                "merge --no-ff %s", 
+                escapeshellarg($this->trackcfg['target'])
+            ), $this->trackcfg
+        ) . bash::chain . git::update_submodules();
+
+        return $cmd;
+    }
+
+    function find_target() {
+        $targettype = $this->trackcfg['type'];
+
+        if ($targettype == 'tags') {
+            // TODO make more sofistamakated
+            bash::execute(sprintf(
+                    git::bin . " tag | grep %s | tail -n1", 
+                    escapeshellarg($this->trackcfg['target'])
+                ), $output, $retvar);
+
+            if (empty($output)) {
+                return 1;
+            }
+
+            $track_target = $output[0];
+        } else {
+            $track_target = $this->full_refname();
+        }
+
+        $this->trackcfg['target'] = $track_target;
+    }
 }

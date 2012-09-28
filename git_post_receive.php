@@ -68,17 +68,18 @@ if (!empty($_POST['payload'])) {
 
     $updated_ref = $payload->ref;
 
-    // Check to see if this
+    // Check to see if this works for multiple matches
     foreach ($tracking_rules as $track_key => $trackcfg) {
         $type = $trackcfg['type'];
         $repo_user = $trackcfg['repo_user'];
-
         $tracking_rule = $trackcfg['target'];
 
         if (preg_match("|refs/$type/$tracking_rule\$|", $updated_ref)) {
             debug('payload matched a rule: ' . $tracking_rule);
             $cmd = sprintf("sudo -u %s %s/usergit.php %s", $repo_user, 
-                $currdir, escapeshellarg($tracking_rule));
+                $currdir, escapeshellarg($track_key));
+            $repo_location = $trackcfg['repo_location'];
+            $matching_track_key = $track_key;
         }
     }
 
@@ -119,10 +120,12 @@ if (!empty($_POST['payload'])) {
                 . implode(';', $mailto));            
             
             $mail_content = sprintf(
-                "Updated repo at %s with command `%s`. Here is the output "
-                    . "of the command:\n\n%s", 
+                "Updated repo at %s with command `%s`.\n"
+                    . "Settings: %s.\n"
+                    . "Output of the command:\n\n%s", 
                 $repo_location,
                 $cmd,
+                print_r($tracking_rules[$matching_track_key], true),
                 implode("\n", $output)
             );
         }
