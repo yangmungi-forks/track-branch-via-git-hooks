@@ -81,6 +81,8 @@ if (!empty($_POST['payload'])) {
             $repo_location = $trackcfg['repo_location'];
             $matching_track_key = $track_key;
 
+            $output = array();
+
             // Execute the command
             bash::execute($cmd . ' 2>&1', $output, $return_var);        
 
@@ -126,7 +128,7 @@ if (!empty($_POST['payload'])) {
             // TODO make an email manager
             $sent_email = mail(
                 implode(',', $mailto),
-                "git_post_receive.php : $subject_part $cmd",
+                "Git-integrate : $subject_part $cmd",
                 $mail_content
             );
 
