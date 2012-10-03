@@ -84,22 +84,23 @@ if (!empty($_POST['payload'])) {
             $output = array();
 
             // Execute the command
-            bash::execute($cmd . ' 2>&1', $output, $return_var);        
+            $return_var = bash::execute($cmd . ' 2>&1', $output);        
 
             $mailto = array($admin_email);
             $subject_part = 'Successfully run ';
 
             // if $return_var is non-zero, then an error happened
             // http://www.linuxtopia.org/online_books/advanced_bash_scripting_guide/exitcodes.html
-            if (0 !== $return_var) {
+            if ($return_var) {
                 // there was an error, so email the admin
                 debug('there was an error, emailing admin: ' . $admin_email);
 
                 $subject_part = 'There was an error running ';
             
                 $mail_content = sprintf(
-                    "return_var: %d\n\ncommand line output:\n\n%s"
-                        . "\n\njson_payload:\n\n%s", 
+                    "return_var: %d\n\n"
+                        . "output:\n\n%s\n\n"
+                        . "json_payload:\n\n%s", 
                     $return_var,
                     implode("\n", $output), 
                     print_r($payload, true)
@@ -116,8 +117,8 @@ if (!empty($_POST['payload'])) {
             
                 $mail_content = sprintf(
                     "Updated repo at %s with command `%s`.\n"
-                        . "Settings: %s.\n"
-                        . "Output of the command:\n\n%s", 
+                        . "Settings: %s\n"
+                        . "\n\n%s", 
                     $repo_location,
                     $cmd,
                     print_r($tracking_rules[$matching_track_key], true),

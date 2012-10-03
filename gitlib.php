@@ -9,10 +9,11 @@ class bash {
     /**
      *  Simple wrapper, includes some debugging.
      **/
-    static function execute($cmd, &$output, &$retvar) {
+    static function execute($cmd, &$output) {
         debug('executing command: ' . $cmd);
         exec($cmd, $output, $retvar);
-        debug("command output:\n" . implode("\n", $output));    
+        debug("command output:\n" . implode("\n", $output));
+        return $retvar;
     }
 }
 
@@ -49,7 +50,7 @@ class git {
             $fields[$gitcfg] = $gitcfgv;
         }
 
-        // i want to array_map
+        // I want to array_map
         $specials = array();
         foreach ($fields as $gitcfg => $gitv) {
             $specials[] = "-c $gitcfg=". escapeshellarg($gitv);
@@ -64,6 +65,10 @@ class git {
     // Convenience git functions //
     ///////////////////////////////
 
+    static function branch() {
+        return self::command('branch');
+    }
+
     static function fetch() {
         return self::command('fetch -p') 
             . bash::chain . self::command('fetch -pt');
@@ -76,6 +81,10 @@ class git {
     static function full_clean() {
         return self::command('reset --hard') 
             . bash::chain . self::command('clean -fd');
+    }
+
+    static function show_merge_commits($target, $from='HEAD') {
+        return self::command("log $from..$target --first-parent --oneline");
     }
 }
 
@@ -101,8 +110,7 @@ abstract class git_exec {
 
         $this->fetched = true;
 
-        bash::execute(git::fetch(), $output, $retvar);
-        return $retvar;
+        return bash::execute(git::fetch(), $output);
     }
 
     function full_refname() {
@@ -120,9 +128,12 @@ abstract class git_exec {
             return $retvar;
         }
 
+        bash::execute(git::command('status'), $o);
+        $this->print_output($o);
+
         $cmd = $this->prep_command();
 
-        bash::execute($cmd, $output, $retvar);
+        $retvar = bash::execute($cmd, $output);
         $this->print_output($output);
 
         return $retvar;
@@ -138,10 +149,13 @@ class git_pull extends git_exec {
     function prep_command() {
         $trackcfg = $this->trackcfg;
 
-        return git::command(
+        $full_refname = escapeshellarg($this->full_refname());
+
+        return git::show_merge_commits($full_refname) . bash::chain 
+            . git::command(
                 sprintf(
-                    'merge %s --ff-only',
-                    escapeshellarg($this->full_refname())
+                    'merge --ff-only %s',
+                    $full_refname
                 )
             ) . bash::chain . git::update_submodules();
     }
@@ -162,7 +176,7 @@ class git_automerge extends git_exec {
         $mergeret = parent::run();
 
         if ($mergeret) {
-            bash::execute(git::full_clean(), $o, $r);
+            bash::execute(git::full_clean(), $o);
         }
 
         return $mergeret;
@@ -171,12 +185,14 @@ class git_automerge extends git_exec {
     function prep_command() {
         // This command requires some specialties, since a merge requires a 
         // commit
-        $cmd = git::commit_command(
-            sprintf(
-                "merge --no-ff %s", 
-                escapeshellarg($this->trackcfg['target'])
-            ), $this->trackcfg
-        ) . bash::chain . git::update_submodules();
+        $target = escapeshellarg($this->trackcfg['target']);
+        $cmd = git::show_merge_commits($target) . bash::chain 
+            . git::commit_command(
+                sprintf(
+                    "merge --no-ff %s", 
+                    $target
+                ), $this->trackcfg
+            ) . bash::chain . git::update_submodules();
 
         return $cmd;
     }
@@ -189,7 +205,7 @@ class git_automerge extends git_exec {
             bash::execute(sprintf(
                     git::bin . " tag | grep %s | tail -n1", 
                     escapeshellarg($this->trackcfg['target'])
-                ), $output, $retvar);
+                ), $output);
 
             if (empty($output)) {
                 return 1;
@@ -200,6 +216,7 @@ class git_automerge extends git_exec {
             $track_target = $this->full_refname();
         }
 
+        // use $this->target ?
         $this->trackcfg['target'] = $track_target;
     }
 }
